@@ -1,74 +1,76 @@
-from pathlib import Path
-import base64, textwrap
-
-img_path = Path("/mnt/data/39245862-2ec7-4337-8951-c2e80d255a58.png")
-b64 = base64.b64encode(img_path.read_bytes()).decode("ascii")
-
-html = f"""<!doctype html>
+<!doctype html>
 <html lang="tr">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Aspasia Hediye Mesajı</title>
+  <meta name="robots" content="noindex,nofollow" />
+
   <style>
-    html, body {{
+    html, body {
       height: 100%;
       margin: 0;
-      background: #b79b92; /* görselin tonuna yakın, taşma olursa hoş dursun */
+      background: #b79b92;
       display: grid;
       place-items: center;
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-    }}
-    .wrap {{
+    }
+    .wrap {
       width: min(980px, 96vw);
       padding: 18px 0;
       position: relative;
-    }}
-    img {{
+    }
+    img {
       width: 100%;
       height: auto;
       display: block;
       border-radius: 12px;
       box-shadow: 0 10px 30px rgba(0,0,0,.18);
-    }}
-    canvas#confetti {{
+    }
+    canvas#confetti {
       position: fixed;
       inset: 0;
       pointer-events: none;
       z-index: 9999;
-    }}
-    @media (prefers-reduced-motion: reduce) {{
-      canvas#confetti {{ display: none; }}
-    }}
+    }
+    @media (prefers-reduced-motion: reduce) {
+      canvas#confetti { display: none; }
+    }
   </style>
 </head>
+
 <body>
   <canvas id="confetti"></canvas>
+
   <div class="wrap">
-    <img alt="Hediye mesajı" src="data:image/png;base64,{b64}" />
+    <!-- Görsel dosyanın adı mesaj.png olmalı -->
+    <img alt="Hediye mesajı" src="message.jpg" />
   </div>
 
   <script>
-    // Minimal, bağımsız confetti (harici kütüphane yok)
-    (function() {{
+    // Bağımsız confetti (harici kütüphane yok)
+    (function () {
       const canvas = document.getElementById("confetti");
       const ctx = canvas.getContext("2d");
-      let W, H, raf, start;
+      let raf = null;
+      let start = null;
       const pieces = [];
       const COLORS = ["#ffffff","#f7d6e0","#ffe29a","#c7f9cc","#bde0fe","#ffadad"];
 
-      function resize() {{
-        W = canvas.width = window.innerWidth * devicePixelRatio;
-        H = canvas.height = window.innerHeight * devicePixelRatio;
-        ctx.scale(devicePixelRatio, devicePixelRatio);
-      }}
+      function rand(min, max) { return Math.random() * (max - min) + min; }
 
-      function rand(min, max) {{ return Math.random() * (max - min) + min; }}
+      function setupCanvas() {
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = Math.floor(window.innerWidth * dpr);
+        canvas.height = Math.floor(window.innerHeight * dpr);
+        // her seferinde resetle
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
 
-      function spawn(n=180) {{
+      function spawn(n = 180) {
         pieces.length = 0;
-        for (let i=0;i<n;i++) {{
-          pieces.push({{
+        for (let i = 0; i < n; i++) {
+          pieces.push({
             x: rand(0, window.innerWidth),
             y: rand(-window.innerHeight, 0),
             r: rand(3, 7),
@@ -76,81 +78,69 @@ html = f"""<!doctype html>
             vy: rand(2.2, 5.2),
             rot: rand(0, Math.PI),
             vrot: rand(-0.15, 0.15),
-            color: COLORS[(Math.random()*COLORS.length)|0],
+            color: COLORS[(Math.random() * COLORS.length) | 0],
             shape: Math.random() < 0.7 ? "rect" : "circle"
-          }});
-        }}
-      }}
+          });
+        }
+      }
 
-      function draw(t) {{
+      function draw(t) {
         if (!start) start = t;
         const elapsed = (t - start) / 1000;
 
-        ctx.clearRect(0,0,window.innerWidth,window.innerHeight);
+        ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
 
-        for (const p of pieces) {{
+        for (const p of pieces) {
           p.x += p.vx;
           p.y += p.vy;
           p.rot += p.vrot;
           p.vy += 0.02; // hafif yerçekimi
-          // ekrandan çıktıysa yukarıdan tekrar
-          if (p.y > window.innerHeight + 20) {{
+
+          if (p.y > window.innerHeight + 20) {
             p.y = rand(-100, -20);
             p.x = rand(0, window.innerWidth);
             p.vy = rand(2.2, 5.2);
-          }}
+          }
 
           ctx.save();
           ctx.translate(p.x, p.y);
           ctx.rotate(p.rot);
           ctx.fillStyle = p.color;
 
-          if (p.shape === "rect") {{
-            ctx.fillRect(-p.r, -p.r*0.6, p.r*2, p.r*1.2);
-          }} else {{
+          if (p.shape === "rect") {
+            ctx.fillRect(-p.r, -p.r * 0.6, p.r * 2, p.r * 1.2);
+          } else {
             ctx.beginPath();
-            ctx.arc(0, 0, p.r*0.75, 0, Math.PI*2);
+            ctx.arc(0, 0, p.r * 0.75, 0, Math.PI * 2);
             ctx.fill();
-          }}
+          }
+
           ctx.restore();
-        }}
+        }
 
-        // 4.5 sn sonra yavaşça bitir
-        if (elapsed < 4.5) {{
+        // 4.5 sn sonra durdur
+        if (elapsed < 4.5) {
           raf = requestAnimationFrame(draw);
-        }} else {{
+        } else {
           cancelAnimationFrame(raf);
-          ctx.clearRect(0,0,window.innerWidth,window.innerHeight);
-        }}
-      }}
+          ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+        }
+      }
 
-      function run() {{
-        // reduced motion ise çalıştırma
+      function run() {
         if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-        // canvas düzgün boyutlansın
-        canvas.width = window.innerWidth * devicePixelRatio;
-        canvas.height = window.innerHeight * devicePixelRatio;
-        // scale reset
-        ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
-
+        setupCanvas();
         spawn();
         start = null;
         raf = requestAnimationFrame(draw);
-      }}
+      }
 
-      window.addEventListener("resize", () => {{
-        ctx.setTransform(1,0,0,1,0,0);
+      window.addEventListener("resize", () => {
         run();
-      }});
+      });
 
       run();
-    }})();
+    })();
   </script>
 </body>
 </html>
-"""
-
-out = Path("/mnt/data/hediye_mesaji_confetti.html")
-out.write_text(html, encoding="utf-8")
-
-(out.as_posix(), img_path.as_posix(), len(html))
